@@ -24,6 +24,7 @@ from os import chdir
 import re
 import time
 from unidecode import unidecode
+import sys
 
 
 ######################
@@ -57,7 +58,7 @@ linkset = "input/SClinks/merged/SClinksMergedFinal.csv"
 output = []
 outputfile = ["output/SCpeople/SCdataFinal" + str(k) +".csv" for k in range(1,70)]
 
-outputCount = -1
+outputCount = 64
 k = 0
 
 ######################
@@ -95,74 +96,75 @@ driver.addheaders = [ ( 'User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; r
 linksDF = pd.read_csv(linkset, sep =',')
 linksList = linksDF['Links'].tolist()
 
-try:
+#try:
 	############## LOOP THRU ALL LINKS ###########
 
-	for link in linksList:
-		k += 1
-	## overhead: set up storage for this iteration etc
-		record = []
+for link in linksList[62996:]:
+	k += 1
+## overhead: set up storage for this iteration etc
+	record = []
 
-	## access the link
+	print link
+## access the link
+	try:
+		driver.open(link) #if fail, wait 3min
+	except:
+		time.sleep(180)
 		try:
-			driver.open(link) #if fail, wait 3min
+			driver.open(link) # if fail, wait 5min
 		except:
-			time.sleep(180)
+			time.sleep(600)
 			try:
-				driver.open(link) # if fail, wait 5min
-			except:
-				time.sleep(600)
-				try:
-					driver.open(link) # if fail, wait 15min 
-				except: 
-					time.sleep(1800)
-					driver.open(link)
+				driver.open(link) # if fail, wait 15min 
+			except: 
+				time.sleep(1800)
+				driver.open(link)
 
-		datasource = driver.response().read()
-		datasoup = BeautifulSoup(datasource,"lxml")	
+	datasource = driver.response().read()
+	datasoup = BeautifulSoup(datasource,"lxml")	
 
-	## next: start the data set! 
-		individualSoup = datasoup.find_all("table", class_="table table-striped table__vertical")[0]
+## next: start the data set! 
+	individualSoup = datasoup.find_all("table", class_="table table-striped table__vertical")[0]
 
-		personDict = dict()
-		### I create a transcript specific dictionary that has as keys the table row name and as value the value for the transcript
-		for row in individualSoup.find_all("tr"):
-			variableName = row.find_all("th")[0].text
-			variableName = unicode(variableName) # note: we need to read it in as unicode!
-			variableValue = row.find_all("td")[0].text
-			variableValue = unicode(variableValue) 
-			variableName = unidecode(variableName) # hence need to decode it first
-			variableName = variableName.encode("ascii")	# and to be able to use it, turn it into ascii
-			variableValue = unidecode(variableValue) 
-			variableValue = variableValue.encode("ascii")
-			personDict[variableName]= variableValue
+	personDict = dict()
+	### I create a transcript specific dictionary that has as keys the table row name and as value the value for the transcript
+	for row in individualSoup.find_all("tr"):
+		variableName = row.find_all("th")[0].text
+		variableName = unicode(variableName) # note: we need to read it in as unicode!
+		variableValue = row.find_all("td")[0].text
+		variableValue = unicode(variableValue) 
+		variableName = unidecode(variableName) # hence need to decode it first
+		variableName = variableName.encode("ascii")	# and to be able to use it, turn it into ascii
+		variableValue = unidecode(variableValue) 
+		variableValue = variableValue.encode("ascii")
+		personDict[variableName]= variableValue
 
-	 ## paste the person specific info into the dataframe
-		for word in varList:
-			try:
-				record = record + [personDict[word]] ### we need to TRY and then catch the expression, in case the variable isnt recorded for the person
-			except KeyError:
-				record = record + [""]  ## add emtpy value if not observed
+ ## paste the person specific info into the dataframe
+	for word in varList:
+		try:
+			record = record + [personDict[word]] ### we need to TRY and then catch the expression, in case the variable isnt recorded for the person
+		except KeyError:
+			record = record + [""]  ## add emtpy value if not observed
 
 
-		output.append(record)  ## add the row to the overall data set
+	output.append(record)  ## add the row to the overall data set
 
-		if k%nSave == 0:
-			outputCount +=1 
-			outputframe = pd.DataFrame(output, columns=variableNames)
-			outputframe.to_csv(outputfile[outputCount],sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
-			output = []
+	if k%nSave == 0:
+		outputCount +=1 
+		outputframe = pd.DataFrame(output, columns=variableNames)
+		outputframe.to_csv(outputfile[outputCount],sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
+		output = []
 
-	# one last save!
-	outoutCount +=1 
-	outputframe = pd.DataFrame(output, columns=variableNames)
-	outputframe.to_csv(outputfile[k],sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	
+# one last save!
+outputCount +=1 
+outputframe = pd.DataFrame(output, columns=variableNames)
+outputframe.to_csv(outputfile[outputCount],sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	
 
-except:
-	print k 
-	print outputCount
-	e = sys.exc_info()
-	print e
+# except:
+# 	print k 
+# 	print outputCount
+# 	e = sys.exc_info()
+# 	print e
 
 ## let me know when all is done
 print 'done! :)' # to let me know its done 
