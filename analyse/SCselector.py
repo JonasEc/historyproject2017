@@ -17,15 +17,16 @@ from bs4 import BeautifulSoup
 
 from os import chdir
 import re
-import datetime
+from datetime import *
+from dateutil.relativedelta import *
 
 
 ########################
 # Exec Decisions
 
 # End of Pals Recruitment:
-palsEndDate = datetime.date(1916,3,2) ## year month day 
-ageCutOff = 18
+palsEndDate = date(1916,3,2) ## year month day 
+ageCutoff = 19
 
 
 # types of regiments:
@@ -76,7 +77,7 @@ print len(df)
 
 ## Step 1: we only care about people until end of Pal's recruitment
 # first need to transform AttestationDate into useful date
-df.AttestationDate = pd.to_datetime(df.AttestationDate)
+df.AttestationDate = pd.to_datetime(df.AttestationDate).dt.date # to_datetime turns into datetime object. access the date part with dt.date 
 # then we drop people who enlisted too late
 df = df[df.AttestationDate <= palsEndDate]
 
@@ -91,13 +92,12 @@ df["Unit"] = df["Unit"].astype('category')
 # third we need to turn add types to this (outside program/ by hand)
 
 # # fourth, I read these lists back into pandas
-dfList = pd.read_csv(listFile, sep =',') 
+dfList = pd.read_csv(listFile, sep =',', skipinitialspace=True, usecols=["Regiment", "Type"]) 
 
 df = pd.merge(df, dfList, how= "inner" , on= "Regiment")
 
 # # and kick out non-infantry:
 df = df[df.Type == 0]
-
 
 
 ## Step 3: kick out people who are too young to serve (?)
@@ -114,17 +114,42 @@ def ageCleanerMonths(x):
 		return months.group(1)
 	else:
 		return "999"
+def birthday(row):
+	row["BirthDate"] = row["AttestationDate"] - relativedelta(months = row["AgeMonths"],years = row["AgeYears"])
+#	row["BirthDate"] = pd.to_datetime(row["BirthDate"])
+	return row["BirthDate"]
+def ageatcutoff(row):
+	timedelta = palsEndDate- row["BirthDate"] # get a timedelta object in days between palsenddate and the birthdate of the person
+	timedelta = int(timedelta.days)/365.25 # access the days element and turn into integer, then divide by 365.25
+	row["AgeAtCutoff"] = timedelta
+	return row["AgeAtCutoff"] 
 
 df["AgeYears"] = df["Age"].apply(ageCleanerYears).astype(int) 
 df["AgeMonths"] = df["Age"].apply(ageCleanerMonths).astype(int) 
 # intermediate step: do we keep people without age in?
 dfNoAge = df[df["AgeYears"] == 999]
 df = df[df["AgeYears"] != 999]
-# second, kick out people below 18:
-df = df[df["AgeYears"] >= 18]
+df = df[df["BirthYear"] != ""]
+df["BirthYear"] = df["BirthYear"].astype(int)
+# second, kick out people below cutoff age at at cutoff date:
+df["BirthDate"] = df.apply(birthday, axis = 1)
+df["AgeAtCutoff"] = df.apply(ageatcutoff, axis = 1)
+
+df = df[df["AgeAtCutoff"] >= ageCutoff]
 
 
-print len(df)
+
+df.drop(df.columns[0], axis=1, inplace=True)
+
+length = len(df)
+
+print length
+
+IDlist = [i for i in range(length)]
+
+IDcol = pd.Series(IDlist).astype(int)
+
+df["ID"] = IDcol
 
 
 ### save to csv
