@@ -54,7 +54,7 @@ maxInput = len(inputfile)
 listFile = "output/listofregimentsTypedManualV1.csv"
 
 # what is our output?
-outputfile = "data/SCsample.csv"
+outputfile = "data/SCsample2.csv"
 
 # Read in the data
 df = pd.read_csv(inputfile[0], sep =',')
@@ -147,7 +147,7 @@ print length
 
 IDlist = [i for i in range(length)]
 
-IDcol = pd.Series(IDlist).astype(int)
+IDcol = pd.Series(IDlist,index=df.index)
 
 df["ID"] = IDcol
 

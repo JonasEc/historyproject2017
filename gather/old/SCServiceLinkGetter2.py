@@ -41,15 +41,11 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # what data set are we using?
-inputdata = "data/SCsample2.csv" 
+inputdata = "data/SCsample.csv" 
 
 # what is our output?
 output = []
-
-DataSetName = raw_input("What DataSetName?")
-DataSetName = str(DataSetName)
-
-outputfile = "input/SCServiceLinks/SCLinkServiceRec" + DataSetName
+outputfile = "input/SCServiceLinks/SCLinkServiceRec4N"
 
 outputcounter = 0
 
@@ -130,12 +126,8 @@ baseurl = baseurl + recordset
 
 ## The input:
 # list of people we want to find (column names: 'Firstname' and 'Lastname')
-rangeInputLower = raw_input("What lower rowlimit?")
-rangeInputLower = int(rangeInputLower)
-rangeInputUpper = raw_input("What upper rowlimit?")
-rangeInputUpper = int(rangeInputUpper)
+peopleDF = pd.read_csv(inputdata, sep=',', skiprows = [i for i in range(1,14000)], header = 0)
 
-peopleDF = pd.read_csv(inputdata, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 17000))], header = 0)
 
 
 ## Var Names:
