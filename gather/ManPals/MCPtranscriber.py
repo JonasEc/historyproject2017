@@ -45,13 +45,19 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # our data input file
-linkset = "input/MCPlinks.csv" 
+linkset = "input/MClinks/MCPLinksMerged.csv" 
 
 # what is our output?
 output = []
-outputfile = "output/MCPdata.csv"
+outputfile = "output/MCPdata"
 
+nameCSV = raw_input("DataSetName")
+outputfileName = outputfile + nameCSV + ".csv"
 
+rangeInputLower = raw_input("What lower name?")
+rangeInputLower = int(rangeInputLower)
+rangeInputUpper = raw_input("What upper name?")
+rangeInputUpper = int(rangeInputUpper)
 
 
 ######################
@@ -61,7 +67,7 @@ outputfile = "output/MCPdata.csv"
 driver = mechanize.Browser()
 
 # Enable cookie support for mechanize 
-cookie = pickle.load( open("cookies/cookiesFMP.pkl","rb"))
+cookie = pickle.load( open("cookies/cookiesLFWW.pkl","rb"))
 
 cookiejar = cookielib.LWPCookieJar() 
 
@@ -95,7 +101,7 @@ linksList = linksDF['Links'].tolist()
 
 ############## LOOP THRU ALL LINKS ###########
 
-for link in linksList:
+for link in linksList[rangeInputLower:rangeInputUpper]:
 
 ## overhead: set up storage for this iteration etc
 	personLinkList = []
@@ -159,7 +165,7 @@ for link in linksList:
 outputframe = pd.DataFrame(output, columns=variableNames)
 
 ### and export that frame to a csv
-outputframe.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
+outputframe.to_csv(outputfileName,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
 
 ## let me know when all is done
 print 'done! :)' # to let me know its done 

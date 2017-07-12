@@ -21,9 +21,9 @@ from os import chdir
 import re
 from unidecode import unidecode
 from math import ceil
+from random import random
 import sys
 import time
-from random import random
 
 
 ######################
@@ -38,11 +38,11 @@ saveper =100
 # Data Storage, Output and Input
 
 # select correct directory
-directory = ' E:\Melanie Wallskog\historyproject'
+directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # what data set are we using?
-inputdata = "data\SCsample2.csv" 
+inputdata = "data/SCsample2.csv" 
 
 # what is our output?
 output = []
@@ -50,10 +50,9 @@ output = []
 DataSetName = raw_input("What DataSetName?")
 DataSetName = str(DataSetName)
 
-outputfile = "input\SCServiceRec" + DataSetName
+outputfile = "input/SC1911Links/SC1911Rec" + DataSetName
 
 outputcounter = 0
-
 
 ######################
 # Mechanize Set up
@@ -83,12 +82,15 @@ driver.addheaders = [ ( 'User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; r
 
 
 ### searching function:
-
+# this function takes a url, tries to read out the links, and then either returns a link or "False" (ie no content) 
+# +  a continuation marker ("TRUE = continue", "FALSE = dont continue")
 def searchforperson(url):
 	output = []
 
-
 	time.sleep(random()) 
+
+	if url == "": ## if url is actually empty, return no content and continue to next iteration
+		return (False, True)
 
 	try:
 		driver.open(url)
@@ -97,6 +99,9 @@ def searchforperson(url):
 		try:
 			driver.open(url)
 		except:
+			e = sys.exc_info()
+			print e
+			print url 
 			return (False, True)
 
 	datasource = driver.response().read()
@@ -106,9 +111,9 @@ def searchforperson(url):
 	number =  [int(s) for s in howmany.text.split() if s.isdigit()]
 	if number: ## are there any numbers?
 		if number[0] == 0:  # we need to try a less restrictive search! 
-			return (False, True)
+			return (False, True) ## hence, return no content and return contunue marker
 		elif number[0] > maxNumber: ## throw away people that are unidentifiable
-			return (False, False)
+			return (False, False) ## hence, return no content and DONT return contunue marker
 		else:
 			# find the table that has the entire list of search results and save all its rows
 			data_rows = datasoup.find_all('tbody')[0].find_all('tr')
@@ -118,10 +123,10 @@ def searchforperson(url):
 				link = "https://search.livesofthefirstworldwar.org" + link # complete the link
 				# save the link to a csv to use later
 				output.append(link) 
-
-			return (output, False)
+ 
+			return (output, False) ## hence, return captured content and DONT return contunue marker
 	else:
-		return (False, True)
+		return (False, True) ## we didnt find anything useful, hence return no content and return contunue marker
 
 
 ##### THE ACTUAL SEARCHES
@@ -129,7 +134,10 @@ def searchforperson(url):
 # we need to use the base search url 
 baseurl = "https://search.livesofthefirstworldwar.org/search/world-records/"
 # where do we search?
-recordset = "british-army-service-records?" 
+recordset = "1911-census-for-england-and-wales?" 
+
+born = "&SearchFacets[0].FriendlyId=WherebornText&SearchFacets[0].Value="
+bornVariant = "&SearchFacets[0].Variants=true"
 
 baseurl = baseurl + recordset
 
@@ -183,13 +191,13 @@ for index, row in peopleDF.iterrows():
 	# BirthPlace
 	birthplace = row["BirthPlace"]
 	if birthplace and isinstance(birthplace, basestring):
-		birthplace = "&keywordsplace=" + "%20".join(birthplace.split())
+		birthplace = born + "%20".join(birthplace.split())
 		birthplace = "%27".join(birthplace.split("'"))
 	else:
 		birthplace = ""
 	birthcounty = row["BirthCounty"]		
 	if birthcounty and isinstance(birthcounty, basestring):
-		birthcounty = "&keywordsplace=" + "%20".join(birthcounty.split())
+		birthcounty = born + "%20".join(birthplace.split()) 
 		birthcounty = "%27".join(birthcounty.split("'"))
 	else:
 		birthcounty = ""
@@ -215,19 +223,41 @@ for index, row in peopleDF.iterrows():
 
 	# create the search URLs (decreasingly specific)
 
-	url0 = baseurl +  firstname  +  lastname  + birthplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
-	url1 = baseurl +  firstname  +  lastname  + birthplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	url2 = baseurl +  firstname  +  lastname  + attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
-	url3 = baseurl +  firstname  +  lastname +  attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	url4 = baseurl +  firstname  +  lastname  + birthcounty + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
-	url5 = baseurl +  firstname  +  lastname  + birthcounty + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	url6 = baseurl +  firstname  +  lastname + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
-	url7 = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	url8 = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset2) 
-	
 
 
-	urllistD = [url0, url1, url2, url3, url4, url5, url6, url7, url8]
+	if birthplace and firstname and lastname and birthyear:
+		url00 = baseurl +  firstname  +  lastname  + birthplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
+		url0  = baseurl +  firstname  +  lastname  + birthplace + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)	
+		url1  = baseurl +  firstname  +  lastname  + birthplace + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
+	else:
+		url00 = ""
+		url0 = ""
+		url1 = ""
+	if attestplace and firstname and lastname and birthyear:
+		url2  = baseurl +  firstname  +  lastname  + attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
+		url3  = baseurl +  firstname  +  lastname +  attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
+	else:
+		url2 = ""
+		url3 = ""
+	if birthcounty and firstname and lastname and birthyear:
+		url40 = baseurl +  firstname  +  lastname  + birthcounty + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
+		url4  = baseurl +  firstname  +  lastname  + birthcounty + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
+		url5  = baseurl +  firstname  +  lastname  + birthcounty + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
+	else:
+		url40 = ""
+		url4 = ""
+		url5 = ""
+	if firstname and lastname and birthyear:
+		url6  = baseurl +  firstname  +  lastname + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
+		url7  = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
+		url8  = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset2) 
+	else:
+		url6 = ""
+		url7 = ""
+		url8 = ""
+
+
+	urllistD = [url00, url0, url1, url2, url3, url40, url4, url5, url6, url7, url8]
 
 	# go to the URL, read out the file
 

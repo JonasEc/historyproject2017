@@ -3,7 +3,7 @@
 # History Project
 
 #############################################
-# First stab at creating a useful subsample
+# Merging Links
 # 2017 06 07
 
 
@@ -49,12 +49,11 @@ df.reset_index(inplace = True,drop= True)
 
 def cleaner(x):
 	out = x.replace('"', '')
-	out = out.replace('[', '["')
-	out = out.replace(']', '"]')
-	out = out.replace(', ', '", "')
-	out = out.replace('[""]', "")
+	out = out.replace("[", "['")
+	out = out.replace("]", "']")
+	out = out.replace(", ", "', '")
+	out = out.replace("['']", '')
 	return out
-
 df["Links"] = df["Links"].apply(cleaner)
 
 

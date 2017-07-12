@@ -48,28 +48,15 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # what is our input?
-inputfile = ["output/SCpeople/SCdataFinal" + str(k) +".csv" for k in range(1,67)]
-#inputfile = ["output/SCpeople/SCdataFinal1.csv"]
-maxInput = len(inputfile)
-listFile = "output/listofregimentsTypedManualV1.csv"
+inputfile = "data/SCBaseComplete.csv"
+listFile = "data/listofregimentsTypedManualV1.csv"
 
 # what is our output?
-outputfile = "data/SCsample2.csv"
+outputfile = "data/SCBaseSample2.csv"
 
 # Read in the data
 df = pd.read_csv(inputfile[0], sep =',')
 
-for i in range(1,maxInput):
-	try:
-		dfa = pd.read_csv(inputfile[i], sep =',') 
-		df = df.append(dfa)
-	except:
-		continue
-
-########################
-# print some sumamry stats
-
-print len(df)
 
 
 #########################
@@ -123,6 +110,7 @@ def ageatcutoff(row):
 	timedelta = int(timedelta.days)/365.25 # access the days element and turn into integer, then divide by 365.25
 	row["AgeAtCutoff"] = timedelta
 	return row["AgeAtCutoff"] 
+
 
 df["AgeYears"] = df["Age"].apply(ageCleanerYears).astype(int) 
 df["AgeMonths"] = df["Age"].apply(ageCleanerMonths).astype(int) 
