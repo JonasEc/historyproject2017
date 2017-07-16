@@ -4,7 +4,7 @@
 
 #############################################
 # Scraping the info from the links: RESTRICTED TO IDENTIFIED CASES!
-# 2017 06 29
+# 2017 07 06
 
 
 #########################
@@ -29,8 +29,7 @@ from time import sleep
 # Executive Decisions
 
 ## these are the [16] variables observed per person
-varList = ["First name(s)","Last name","Sex", "Relationship","Marital status","Occupation","Age","Birth year","Birth place","Address","Parish","County","Country","Registration district","Registration district number","Years married","Marriage year"]
-varListHH = ["First name(s)", "Last name", "Relationship", "Marital status", "Sex", "Occupation", "Age", "Birth year", "Birth place"]
+varList = ["First name(s)","Last name","Service number", "Age", "Birth year", "Birth town", "Birth county", "Residence town", "Residence county", "Residence country", "Birth country", "Regiment", "Unit / Battalion","Year"]
 
 
 ##################### 
@@ -41,11 +40,11 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # our data input file
-linkset = "input/SC1911merged.csv" 
+linkset = "input/MCLinks/MCLinksServiceMerged.csv" 
 
 # what is our output?
 output = []
-outputfile = "output/SC1911data"
+outputfile = "output/MCServiceData"
 
 # INPUT_SELECTOR:
 name = raw_input("DataSetName")
@@ -55,8 +54,7 @@ rangeInputLower = int(rangeInputLower)
 rangeInputUpper = raw_input("What upper rowlimit?")
 rangeInputUpper = int(rangeInputUpper)
 
-# setup
-maxNumberHouseholdMembers = 0 
+
 
 #####################
 #SCRAPER
@@ -90,43 +88,6 @@ def scrapeP(datasoup):
 
 
 
-def scrapeH(memberSoup,link):
-	record = []
-
-	rows = memberSoup[0].find_all("tr")
-
-	dictList = []
-
-	### I create a transcript specific dictionary that has as keys the table row name and as value the value for the transcript
-	for column in rows[0].find_all("th"):
-		variableName = column.text
-		variableName = unicode(variableName) # note: we need to read it in as unicode!
-		variableName = unidecode(variableName) # hence need to decode it first
-		variableName = variableName.encode("ascii")	# and to be able to use it, turn it into ascii
-		dictList = dictList + [variableName]
-	
-	for row in rows[1:]:
-		cols = row.find_all("td")
-		linkSoup = cols[10].a.get('href')
-		personLink = "https://search.livesofthefirstworldwar.org" + linkSoup
-		if personLink == link: ## I don't want to add the person of interest into the HH data-set again!
-			continue
-		else:
-			Hdict = dict()
-			for column in range(len(cols)-1):
-				variableValue = cols[column].text
-				variableValue = unicode(variableValue) 	
-				variableValue = unidecode(variableValue) 
-				variableValue = variableValue.encode("ascii")
-				Hdict[dictList[column]] = variableValue
-## Then I loop over household members and read their data:
-			for word in varListHH:
-				try:
-					record = record + [Hdict[word]] ### we need to TRY and then catch the expression, in case the variable isnt recorded for the person
-				except KeyError:
-					record = record + [""]  ## add emtpy value if not observed
-
-	return record, len(rows[1:])
 
 
 ######################
@@ -177,29 +138,25 @@ for index, row in linksDF.iterrows():
 	linkList = eval(row["Links"])
 	ID = row["PersonCounter"]
 
-	if len(linkList) > 1:
-		continue
-	else:
-		link = linkList[0]
-		HHrecord = []
-		
-		driver.open(link)
-		sleep(random())
+	for link in linkList:
+		try:
+			driver.open(link)
+			sleep(random())
+		except:
+			sleep(60*random())
+			try: 
+				driver.open(link)
+			except:
+				sleep(120*random())
+				try:
+					driver.open(link)
+				except:
+					continue
 		datasource = driver.response().read()
 		datasoup = BeautifulSoup(datasource,"lxml")	
 
-## First: scrape detailed record for the person
+## Scrape detailed record for the person
 		record = [ID] + scrapeP(datasoup)
-## second: get less detailed record from household summary table for other members
-		memberSoup = datasoup.find_all("table", class_="table table-hover tiny-table")	
-## second: loop over the memebers to get their links
-		if len(memberSoup) > 0:
-			recordH, nHH = scrapeH(memberSoup,link)
-			record = record + recordH
-
-			maxNumberHouseholdMembers = max(maxNumberHouseholdMembers, nHH -1)
-
-		record = record
 
 		output.append(record)  ## add the row to the overall data set
 		
@@ -208,13 +165,7 @@ for index, row in linksDF.iterrows():
 ########%%%%%%%%%% DONE! 
 
 ## prepare the variable names
-variableNames = (["ID", "FirstName","LastName","Sex", "RelationshipWithHead","MartialStatus","Occupation","Age","BirthYear","BirthPlace",
-	"Address","Parish","County","Country","RegistrationDistrict","RegistrationDistrictNumber","YearsMarried","MarriageYear"]	)
-
-
-for k in range(1,maxNumberHouseholdMembers+1):
-	variableNames = variableNames + (["FirstName"+str(k),"LastName"+str(k), "RelationshipWithHead"+str(k),"MartialStatus"+str(k),"Sex"+str(k), 
-		"Occupation"+str(k),"Age"+str(k),"BirthYear"+str(k),"BirthPlace"+str(k)])
+variableNames = ["ID", "FirstName","LastName","ServiceNumber", "Age", "BirthYear", "BirthTown", "BirthCounty", "BirthCountry", "ResidenceTown", "ResidenceCounty", "ResidenceCountry", "Regiment", "UnitBattalion","Year"]
 
 
 

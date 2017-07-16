@@ -21,7 +21,8 @@ from datetime import *
 from dateutil.relativedelta import *
 
 
-
+## EXEC:
+# ID = MC+ numbers
 
 ##################### 
 # Data Storage, Output and Input
@@ -31,13 +32,12 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # what is our input?
-letters = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"]
-inputfile = ["output/SCService/SCServiceData" + letters[k] +".csv" for k in range(len(letters))]
+inputfile = ["output/MCPdata/MCPdata" + str(k) +".csv" for k in range(1,14)]
 #inputfile = ["output/SCpeople/SCdataFinal1.csv"]
-
+maxInput = len(inputfile)
 
 # what is our output?
-outputfile = "data/SCServiceComplete.csv"
+outputfile = "data/MCPComplete.csv"
 
 # Read in the data
 df = pd.read_csv(inputfile[0], sep =',')
@@ -48,6 +48,14 @@ for i in range(1,len(inputfile)+1):
 		df = df.append(dfa)
 	except:
 		continue
+
+## make ID:
+length = len(df)
+IDlist = ["MC" + str(i) for i in range(length)]
+IDcol = pd.Series(IDlist,index=df.index)
+
+df["ID"] = IDcol
+
 
 ########################
 # print some sumamry stats

@@ -41,7 +41,7 @@ outputfile = "data/SC1911Complete.csv"
 # Read in the data
 df = pd.read_csv(inputfile[0], sep =',')
 
-for i in range(1,maxInput):
+for i in range(1,len(inputfile)+1):
 	try:
 		dfa = pd.read_csv(inputfile[i], sep =',') 
 		df = df.append(dfa)
@@ -53,7 +53,12 @@ for i in range(1,maxInput):
 
 print len(df)
 
+important = ["ID","FirstName","LastName","Sex","RelationshipWithHead","MartialStatus","Occupation","Age","BirthYear","BirthPlace","Address","Parish","County","Country","RegistrationDistrict","RegistrationDistrictNumber","YearsMarried","MarriageYear"]
+otherVarsPre = [("FirstName" + str(k) ,"LastName" + str(k), "RelationshipWithHead" +str(k) , "MartialStatus" +str(k), "Sex" + str(k),"Occupation" + str(k),"Age" +str(k), "BirthYear" + str(k),"BirthPlace" + str(k) ) for k in range(1,20)]
+otherVars =  [otherVarsPre[i][j] for i in range(len(otherVarsPre)) for j in range(9)]
+reordering = important + otherVars
 
+df = df[reordering]
 
 ### save to csv
 df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	

@@ -3,7 +3,7 @@
 # History Project
 
 #############################################
-# Scraping the links for SC people in 1911 Records
+# Scraping the links for MC people in 1911 Records
 # 2017 05 27
 
 
@@ -30,9 +30,6 @@ import time
 # Executive Decisions
 
 maxNumber = 20
-saveper =100
-
-
 
 ##################### 
 # Data Storage, Output and Input
@@ -42,7 +39,7 @@ directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
 chdir(directory)
 
 # what data set are we using?
-inputdata = "data/SCsample2.csv" 
+inputdata = "data/MCPcomplete.csv" 
 
 # what is our output?
 output = []
@@ -50,9 +47,34 @@ output = []
 DataSetName = raw_input("What DataSetName?")
 DataSetName = str(DataSetName)
 
-outputfile = "input/SC1911Links/SC1911Rec" + DataSetName
+outputfile = "input/MCLinks/MC1911Links/MC1911Rec" + DataSetName
 
-outputcounter = 0
+
+##### THE ACTUAL SEARCHES
+
+# we need to use the base search url 
+baseurl = "https://search.livesofthefirstworldwar.org/search/world-records/"
+# where do we search?
+recordset = "1911-census-for-england-and-wales?" 
+
+baseurl = baseurl + recordset
+
+## The input:
+# list of people we want to find (column names: 'Firstname' and 'Lastname')
+rangeInputLower = raw_input("What lower rowlimit?")
+rangeInputLower = int(rangeInputLower)
+rangeInputUpper = raw_input("What upper rowlimit?")
+rangeInputUpper = int(rangeInputUpper)
+
+peopleDF = pd.read_csv(inputdata, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 17000))], header = 0)
+
+
+#### 
+parish1 = "&parish=south%20manchester"
+parish2="&parish=north%20manchester"
+parish3 = "&parish=manchester"
+county = "&county=lancashire"
+
 
 ######################
 # Mechanize Set up
@@ -129,42 +151,11 @@ def searchforperson(url):
 		return (False, True) ## we didnt find anything useful, hence return no content and return contunue marker
 
 
-##### THE ACTUAL SEARCHES
 
-# we need to use the base search url 
-baseurl = "https://search.livesofthefirstworldwar.org/search/world-records/"
-# where do we search?
-recordset = "1911-census-for-england-and-wales?" 
-
-born = "&SearchFacets[0].FriendlyId=WherebornText&SearchFacets[0].Value="
-bornVariant = "&SearchFacets[0].Variants=true"
-
-baseurl = baseurl + recordset
-
-## The input:
-# list of people we want to find (column names: 'Firstname' and 'Lastname')
-rangeInputLower = raw_input("What lower rowlimit?")
-rangeInputLower = int(rangeInputLower)
-rangeInputUpper = raw_input("What upper rowlimit?")
-rangeInputUpper = int(rangeInputUpper)
-
-peopleDF = pd.read_csv(inputdata, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 17000))], header = 0)
-
-
-## Var Names:
-## FirstName,LastName,ServiceNumber,Age,BirthYear,BirthPlace,BirthCounty,BirthCountry,
-## Occupation,AttestationYear,AttestationDate,AttestationPlace,Unit,Regiment,Height,Weight,
-## EyeColour,Complexion,HairColour,ChestExpansion,ChestSize,County,Remarks,Notes,Type,AgeYears,AgeMonths,BirthDate,AgeAtCutoff
-
-offset0 = 0
-offset1 = 1
-offset2 = 2
-counter = 1
 
 ############## LOOP THRU ALL NAMES ##################
 
 for index, row in peopleDF.iterrows():
-	counter +=1
 	tempoutput = []
 ######### perform the search: prepare the list of urls that we then go thru
 
@@ -186,29 +177,7 @@ for index, row in peopleDF.iterrows():
 	# servicenumber = row["ServiceNumber"]
 	# if servicenumber and servicenumber is not "-":
 	# 	servicenumber= "&servicenumber==" + servicenumber
-	# BirthYear
-	birthyear = row["BirthYear"] # we know there is a birthyear !
-	# BirthPlace
-	birthplace = row["BirthPlace"]
-	if birthplace and isinstance(birthplace, basestring):
-		birthplace = born + "%20".join(birthplace.split())
-		birthplace = "%27".join(birthplace.split("'"))
-	else:
-		birthplace = ""
-	birthcounty = row["BirthCounty"]		
-	if birthcounty and isinstance(birthcounty, basestring):
-		birthcounty = born + "%20".join(birthplace.split()) 
-		birthcounty = "%27".join(birthcounty.split("'"))
-	else:
-		birthcounty = ""
-	# AttestationPlace
-	attestplace = row["AttestationPlace"]
-	if attestplace and isinstance(attestplace, basestring):
-		attestplace = "&keywordsplace=" + "%20".join(attestplace.split())
-		attestplace = "%27".join(attestplace.split("'"))
-	else:
-		attestplace = ""
-
+	
 	## ID:
 	ID = row["ID"]
 
@@ -224,40 +193,14 @@ for index, row in peopleDF.iterrows():
 	# create the search URLs (decreasingly specific)
 
 
-
-	if birthplace and firstname and lastname and birthyear:
-		url00 = baseurl +  firstname  +  lastname  + birthplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
-		url0  = baseurl +  firstname  +  lastname  + birthplace + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)	
-		url1  = baseurl +  firstname  +  lastname  + birthplace + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	else:
-		url00 = ""
-		url0 = ""
-		url1 = ""
-	if attestplace and firstname and lastname and birthyear:
-		url2  = baseurl +  firstname  +  lastname  + attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
-		url3  = baseurl +  firstname  +  lastname +  attestplace + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	else:
-		url2 = ""
-		url3 = ""
-	if birthcounty and firstname and lastname and birthyear:
-		url40 = baseurl +  firstname  +  lastname  + birthcounty + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
-		url4  = baseurl +  firstname  +  lastname  + birthcounty + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0)
-		url5  = baseurl +  firstname  +  lastname  + birthcounty + bornVariant + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-	else:
-		url40 = ""
-		url4 = ""
-		url5 = ""
-	if firstname and lastname and birthyear:
-		url6  = baseurl +  firstname  +  lastname + "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset0) 
-		url7  = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset1) 
-		url8  = baseurl +  firstname  +  lastname +  "&yearofbirth=" + str(birthyear) + "&yearofbirth_offset=" + str(offset2) 
-	else:
-		url6 = ""
-		url7 = ""
-		url8 = ""
+	url1 = baseurl + firstname + lastname + parish1
+	url2 = baseurl + firstname + lastname + parish2
+	url3 = baseurl + firstname + lastname + parish3
+	url4 = baseurl + firstname + lastname + county
+	url5 = baseurl + firstname + lastname	
 
 
-	urllistD = [url00, url0, url1, url2, url3, url40, url4, url5, url6, url7, url8]
+	urllistD = [url1, url2, url3, url4]
 
 	# go to the URL, read out the file
 
@@ -273,16 +216,10 @@ for index, row in peopleDF.iterrows():
 	output.append([tempoutput, ID]) 
 		
 
-	if counter%saveper == 0: 
-		print counter
-		outputfileName = outputfile + str(outputcounter) + ".csv"
-		outputframe = pd.DataFrame(output, columns=["Links", "PersonCounter"])
-		outputframe.to_csv(outputfileName,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	
-		output = []	
-		outputcounter +=1
 
 
-outputfileName = outputfile + str(outputcounter) + ".csv"
+
+outputfileName = outputfile + ".csv"
 outputframe = pd.DataFrame(output, columns=["Links", "PersonCounter"])
 outputframe.to_csv(outputfileName,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
 
