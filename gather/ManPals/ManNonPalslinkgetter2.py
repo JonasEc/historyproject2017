@@ -23,6 +23,7 @@ from unidecode import unidecode
 from math import ceil
 import time
 import sys
+from random import random 2
 
 
 ######################
@@ -49,8 +50,8 @@ csvcounter = 0
 namecounter = 0
 
 # INPUT_SELECTOR:
-name = raw_input("DataSetName")
-
+nameFile = raw_input("DataSetName")
+choice = int(raw_input("Choice?"))
 rangeInputLower = raw_input("What lower rowlimit?")
 rangeInputLower = int(rangeInputLower)
 rangeInputUpper = raw_input("What upper rowlimit?")
@@ -130,7 +131,7 @@ birthtowns = pd.read_csv(input1,sep=',')
 birthtownset = birthtowns["town"].tolist()
 
 
-baseurl = "https://search.livesofthefirstworldwar.org/search/world-records/british-army-service-records?eventyear=1914&eventyear_offset=1&regiment=manchester%20regiment&birthtown="
+baseurl = "https://search.livesofthefirstworldwar.org/search/world-records/british-army-service-records?eventyear=1915&eventyear_offset=1&regiment=manchester%20regiment&birthtown="
 
 yobD = "&o=yearofbirth"
 yobA = "&o=yearofbirth&d=asc"
@@ -140,58 +141,88 @@ orderDsc = "&o=firstname"
 
 nameSelector = "&firstname="
 
-birthtownasc = "_=1500212028772&d=asc"
+birthtownasc = "&_=1500212028772&d=asc"
 
-############## LOOP THRU ALL NAMES ##################
+############# LOOP THRU ALL NAMES ##################
 
-# try:
-for birthtown in birthtownset[rangeInputLower:rangeInputUpper]:
-	dummy = 0
-
-# open each webpage individually
-	url = baseurl + birthtown + yobD
-
-	driver.open(url)
-	datasource = driver.response().read()
-	datasoup = BeautifulSoup(datasource,"lxml")
-
-## find out what we are dealing with:
-	hitsHeader = datasoup.find_all('div', class_ = "SearchResultsHeader")[0]
-	hits = hitsHeader.text
-	hits = hits.replace(',',"")
-	hits = [int(s) for s in hits.split() if s.isdigit()]
-
-	if len(hits) == 0:
-		continue
-
-	if hits[0] > entries*maxPage & hits[0] < entries*maxPage*2:
-		dummy = 1
-	elif hits[0] == 0:
-		continue
-	elif hits[0] >= entries*maxPage*2:
-		dummy = 2
-	else:
+if choice == 1:
+	for birthtown in birthtownset[rangeInputLower:rangeInputUpper]:
 		dummy = 0
 
-	maxPageName = min(int(ceil(hits[0]/entries)),maxPage)
+	# open each webpage individually
+		url = baseurl + birthtown + yobD
 
-	if dummy == 0:
-		output = output + scrape(url,maxPageName)
-	if dummy == 1:
-		output = output + scrape(url,maxPageName)
-		url = baseurl + birthtown + yobA
-		output = output + scrape(url,maxPageName)
-	if dummy == 2:
-		for name in (nameList1 + nameList2):
-			url = baseurl + birthtown + yobD + nameSelector + name
+		driver.open(url)
+		datasource = driver.response().read()
+		datasoup = BeautifulSoup(datasource,"lxml")
+
+	## find out what we are dealing with:
+		hitsHeader = datasoup.find_all('div', class_ = "SearchResultsHeader")[0]
+		hits = hitsHeader.text
+		hits = hits.replace(',',"")
+		hits = [int(s) for s in hits.split() if s.isdigit()]
+
+		if len(hits) == 0:
+			continue
+
+		if hits[0] > entries*maxPage & hits[0] < entries*maxPage*2:
+			dummy = 1
+		elif hits[0] == 0:
+			continue
+		elif hits[0] >= entries*maxPage*2:
+			dummy = 2
+		else:
+			dummy = 0
+
+		maxPageName = min(int(ceil(hits[0]/entries)),maxPage)
+
+		if dummy == 0:
 			output = output + scrape(url,maxPageName)
+		if dummy == 1:
+			output = output + scrape(url,maxPageName)
+			url = baseurl + birthtown + yobA
+			output = output + scrape(url,maxPageName)
+		if dummy == 2:
+			for name in (nameList1 + nameList2):
+				url = baseurl + birthtown + yobD + nameSelector + name
+				output = output + scrape(url,maxPageName)
+else:
+	for name in (nameList1 + nameList2):
+		url = baseurl + ""  + nameSelector + name + birthtownasc
+		try:
+			driver.open(url)
+		except:
+			time.sleep(random()*90)
+			try:
+				driver.open(url)
+			except:
+				time.sleep(random()*90)
+				try:
+					driver.open(url)
+				except:
+					print url
+					continue
+		datasource = driver.response().read()
+		datasoup = BeautifulSoup(datasource,"lxml")
 
-# url = baseurl + "" + yobD + birthtownasc
-# output = output + scrape(url,76)
+	## find out what we are dealing with:
+		hitsHeader = datasoup.find_all('div', class_ = "SearchResultsHeader")[0]
+		hits = hitsHeader.text
+		hits = hits.replace(',',"")
+		hits = [int(s) for s in hits.split() if s.isdigit()]
+
+		if len(hits) == 0:
+			continue
+
+		maxPageName = min(int(ceil(hits[0]/entries)),maxPage)
+
+		output = output + scrape(url,maxPageName)
+
+
 
 ### now we use the panda operation data frame to turn our output list into a df
 outputframe = pd.DataFrame(output, columns=["Links"])	
-outputfile = outputClass + name + csv ### we need to make a new file name for each save!
+outputfile = outputClass + nameFile + csv ### we need to make a new file name for each save!
 ### and export that frame to a csv
 outputframe.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
 output = [] # and clear for next save

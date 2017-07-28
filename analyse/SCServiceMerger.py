@@ -13,7 +13,6 @@
 from __future__ import division
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 from os import chdir
 import re
@@ -27,7 +26,7 @@ from dateutil.relativedelta import *
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
+directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 # what is our input?
@@ -52,8 +51,11 @@ for i in range(1,len(inputfile)+1):
 ########################
 # print some sumamry stats
 
-print len(df)
+print(len(df))
 
+df= df.rename(index=str, columns={'BirthCountry':"ResidenceTown", "ResidenceCountry": "BirthCountry", "ResidenceCounty":"ResidenceCountry","ResidenceTown":"ResidenceCounty"})
+
+df = df.drop(["Unnamed: 0"], 1)
 
 ### save to csv
 df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	
@@ -61,4 +63,7 @@ df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding
 
 
 ## let me know when all is done
-print 'done! :)' 
+print( 'done! :)' )
+
+
+

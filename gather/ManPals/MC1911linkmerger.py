@@ -16,24 +16,23 @@ import pandas as pd
 
 from os import chdir
 
-
 ##################### 
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/input/'
+directory = '/home/jonasmg/Prog/scrapinghistory/input/'
 chdir(directory)
 
 # what is our input?
-inputfile = ["MCLinks/MC1911Links/MC1911Rec" + str(k) + ".csv"   for k in range(0,50) ]
+inputfile = ["MClinks/MC1911Links/MC1911set" + str(k) + ".csv"   for k in range(9) ]
 
 # what is our output?
-outputfile = "MCLinks/MCLinks1911Merged.csv"
+outputfile = "MClinks/MCLinks1911Merged.csv"
 
 # Read in the data
-df = pd.read_csv(inputfile[0], sep =',')
+df = pd.read_csv("MClinks/MC1911Links/MC1911set.csv", sep =',')
 
-for i in range(1,len(inputfile) + 1):
+for i in range(len(inputfile) + 1):
 	try:
 		dfa = pd.read_csv(inputfile[i], sep =',') 
 		df = df.append(dfa)
@@ -59,9 +58,6 @@ def cleaner(x):
 	out = out.replace("['']", '')
 	return out
 df["Links"] = df["Links"].apply(cleaner)
-
-
-
 
 
 df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	

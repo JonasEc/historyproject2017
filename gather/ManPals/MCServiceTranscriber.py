@@ -36,7 +36,7 @@ varList = ["First name(s)","Last name","Service number", "Age", "Birth year", "B
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
+directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 # our data input file

@@ -33,7 +33,7 @@ import time
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
+directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 
@@ -42,7 +42,7 @@ chdir(directory)
 # Selenium Set up
 
 ## log into findmypast.com
-driver = webdriver.Chrome()
+driver = webdriver.Firefox()
 driver.get('https://www.findmypast.com/sign-in')
 
 username = driver.find_element_by_id("emailAddress")

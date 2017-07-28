@@ -13,7 +13,6 @@
 from __future__ import division
 
 import pandas as pd
-from bs4 import BeautifulSoup
 
 from os import chdir
 import re
@@ -44,7 +43,7 @@ ageCutoff = 19
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
+directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 # what is our input?
@@ -55,7 +54,7 @@ listFile = "data/listofregimentsTypedManualV1.csv"
 outputfile = "data/SCBaseSample2.csv"
 
 # Read in the data
-df = pd.read_csv(inputfile[0], sep =',')
+df = pd.read_csv(inputfile, sep =',')
 
 
 
@@ -131,7 +130,6 @@ df.drop(df.columns[0], axis=1, inplace=True)
 
 length = len(df)
 
-print length
 
 IDlist = [i for i in range(length)]
 
@@ -146,4 +144,5 @@ df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding
 
 
 ## let me know when all is done
-print 'done! :)' 
+print('done! :)') 
+

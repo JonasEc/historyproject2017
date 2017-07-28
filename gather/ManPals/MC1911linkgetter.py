@@ -29,17 +29,18 @@ import time
 ######################
 # Executive Decisions
 
-maxNumber = 20
+maxNumber = 1
 
 ##################### 
 # Data Storage, Output and Input
 
 # select correct directory
-directory = '/Users/jonasmuller-gastell/prog/scrapinghistory/'
+directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 # what data set are we using?
-inputdata = "data/MCPcomplete.csv" 
+inputdata1 = "data/MCPComplete.csv" 
+inputdata2 = "output/MCServiceForScrape.csv" 
 
 # what is our output?
 output = []
@@ -47,7 +48,7 @@ output = []
 DataSetName = raw_input("What DataSetName?")
 DataSetName = str(DataSetName)
 
-outputfile = "input/MCLinks/MC1911Links/MC1911Rec" + DataSetName
+outputfile = "input/MClinks/MC1911Links/MC1911set" + DataSetName
 
 
 ##### THE ACTUAL SEARCHES
@@ -60,14 +61,17 @@ recordset = "1911-census-for-england-and-wales?"
 baseurl = baseurl + recordset
 
 ## The input:
-# list of people we want to find (column names: 'Firstname' and 'Lastname')
-rangeInputLower = raw_input("What lower rowlimit?")
-rangeInputLower = int(rangeInputLower)
-rangeInputUpper = raw_input("What upper rowlimit?")
-rangeInputUpper = int(rangeInputUpper)
+SearchType = int(raw_input("SearchType?"))
 
-peopleDF = pd.read_csv(inputdata, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 17000))], header = 0)
-
+if SearchType ==1:
+	# list of people we want to find (column names: 'Firstname' and 'Lastname')
+	rangeInputLower = raw_input("What lower rowlimit?")
+	rangeInputLower = int(rangeInputLower)
+	rangeInputUpper = raw_input("What upper rowlimit?")
+	rangeInputUpper = int(rangeInputUpper)
+	peopleDF = pd.read_csv(inputdata1, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 17000))], header = 0)
+else:
+	peopleDF = pd.read_csv(inputdata2, sep=',')
 
 #### 
 parish1 = "&parish=south%20manchester"
@@ -114,17 +118,12 @@ def searchforperson(url):
 	if url == "": ## if url is actually empty, return no content and continue to next iteration
 		return (False, True)
 
-	try:
-		driver.open(url)
-	except:
-		time.sleep(70)
+	while True:
 		try:
-			driver.open(url)
+			driver.open(url) #if fail, wait 90 sec (on average)
+			break
 		except:
-			e = sys.exc_info()
-			print e
-			print url 
-			return (False, True)
+			time.sleep(180*random())
 
 	datasource = driver.response().read()
 	datasoup = BeautifulSoup(datasource,"lxml")
@@ -133,9 +132,9 @@ def searchforperson(url):
 	number =  [int(s) for s in howmany.text.split() if s.isdigit()]
 	if number: ## are there any numbers?
 		if number[0] == 0:  # we need to try a less restrictive search! 
-			return (False, True) ## hence, return no content and return contunue marker
+			return (False, True) ## hence, return no content and return continue marker
 		elif number[0] > maxNumber: ## throw away people that are unidentifiable
-			return (False, False) ## hence, return no content and DONT return contunue marker
+			return (False, False) ## hence, return no content and DONT return continue marker
 		else:
 			# find the table that has the entire list of search results and save all its rows
 			data_rows = datasoup.find_all('tbody')[0].find_all('tr')
@@ -146,9 +145,9 @@ def searchforperson(url):
 				# save the link to a csv to use later
 				output.append(link) 
  
-			return (output, False) ## hence, return captured content and DONT return contunue marker
+			return (output, False) ## hence, return captured content and DONT return continue marker
 	else:
-		return (False, True) ## we didnt find anything useful, hence return no content and return contunue marker
+		return (False, True) ## we didnt find anything useful, hence return no content and return continue marker
 
 
 
@@ -173,34 +172,67 @@ for index, row in peopleDF.iterrows():
 		lastname = "%27".join(lastname.split("'"))
 	else:
 		lastname = ""
-	# ServiceNumber
-	# servicenumber = row["ServiceNumber"]
-	# if servicenumber and servicenumber is not "-":
-	# 	servicenumber= "&servicenumber==" + servicenumber
+
 	
 	## ID:
 	ID = row["ID"]
 
+	if SearchType ==1:
 
-	# Regiment
-	# regiment = row["Regiment"]
-	# if regiment and isinstance(regiment, basestring):
-	# 	regiment = "&regiment=" + "%20".join(regiment.split())
-	# 	regiment = "&regiment=" + "%27".join(regiment.split("'"))
-	# else:
-	# 	regiment = ""
+		url1 = baseurl + firstname + lastname + parish1
+		url2 = baseurl + firstname + lastname + parish2
+		url3 = baseurl + firstname + lastname + parish3
+		url4 = baseurl + firstname + lastname + county
 
-	# create the search URLs (decreasingly specific)
+		urllistD = [url1, url2, url3, url4]
 
+	else:
+		BirthYear = row["BirthYear"]
+		if BirthYear and isinstance(BirthYear, basestring):
+			BirthYear = "firstname=" + "%20".join(BirthYear.split())
+			BirthYear = "%27".join(BirthYear.split("'"))
+			BirthYear = '&yearofbirth=' + BirthYear + '&yearofbirth_offset=2'
+		else:
+			BirthYear = ""
+		# read birthtown of people
+		BirthTown = row["BirthTown"] 
+		if BirthTown and isinstance(BirthTown, basestring):
+			BirthTown = "&lastname=" + "%20".join(BirthTown.split())
+			BirthTown = "%27".join(BirthTown.split("'"))
+			BirthTown = '&whereborntext=' + BirthTown 
+		else:
+			BirthTown = ""
+		BirthCounty = row["BirthCounty"] 
+		if BirthCounty and isinstance(BirthCounty, basestring):
+			BirthCounty = "&lastname=" + "%20".join(BirthCounty.split())
+			BirthCounty = "%27".join(BirthCounty.split("'"))
+			BirthCounty = '&whereborntext=' + BirthCounty 
+		else:
+			BirthCounty = ""
+		ResidenceTown = row["ResidenceTown"] 
+		if ResidenceTown and isinstance(ResidenceTown, basestring):
+			ResidenceTown = "&lastname=" + "%20".join(ResidenceTown.split())
+			ResidenceTown = "%27".join(ResidenceTown.split("'"))
+			ResidenceTown = '&keywordsplace=' + ResidenceTown 
+		else:
+			ResidenceTown = ""
+		ResidenceCounty = row["BirthCounty"] 
+		if ResidenceCounty and isinstance(ResidenceCounty, basestring):
+			ResidenceCounty = "&lastname=" + "%20".join(ResidenceCounty.split())
+			ResidenceCounty = "%27".join(ResidenceCounty.split("'"))
+			ResidenceCounty = '&keywordsplace=' + ResidenceCounty 
+		else:
+			ResidenceCounty = ""
 
-	url1 = baseurl + firstname + lastname + parish1
-	url2 = baseurl + firstname + lastname + parish2
-	url3 = baseurl + firstname + lastname + parish3
-	url4 = baseurl + firstname + lastname + county
-	url5 = baseurl + firstname + lastname	
+		url1 = baseurl + firstname + lastname + BirthTown + BirthYear
+		url2 = baseurl + firstname + lastname + BirthTown
+		url3 = baseurl + firstname + lastname + BirthCounty + BirthYear
+		url4 = baseurl + firstname + lastname + ResidenceTown + BirthYear
+		url5 = baseurl + firstname + lastname + ResidenceTown
+		url6 = baseurl + firstname + lastname + ResidenceCounty + BirthYear	
 
+		urllistD = [url1, url2, url3, url4, url5, url6]	
 
-	urllistD = [url1, url2, url3, url4]
 
 	# go to the URL, read out the file
 
