@@ -118,6 +118,7 @@ for unit in unitListTrunc:
 		maxPageName = min(int(ceil(hits[0]/entries)),maxPage)
 		for page in range(0,maxPageName):
 			urlNow = url + "&page=" + str(page)
+			print urlNow
 			while True:
 				try:
 					sleep(random())
