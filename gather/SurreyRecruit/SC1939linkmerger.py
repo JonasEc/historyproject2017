@@ -25,10 +25,10 @@ directory = '/home/jonasmg/Prog/scrapinghistory/input/'
 chdir(directory)
 
 # what is our input?
-inputfile = ["SC1911Links/SC1911Rec" + L + str(k) + ".csv"  for L in ["A","B","C","D","E","F","G","H"] for k in range(0,30) ]
+inputfile = ["SCLinks/SC1939Links/SC1939Rec" + L + str(k) + ".csv"  for L in ["", "A","B","C","D","E","F","G","H","I","J","K", "L", "M", "N", "O", "P", "Q", "R"] for k in range(0,8) ]
 
 # what is our output?
-outputfile = "SC1911Merged.csv"
+outputfile = "SC1939Merged.csv"
 
 # Read in the data
 df = pd.read_csv(inputfile[0], sep =',')
@@ -41,24 +41,16 @@ for i in range(1,len(inputfile) + 1):
 		continue
 
 
+print(len(df))
 
 df.drop(df.columns[0], axis=1, inplace=True)
 df.reset_index(inplace = True,drop= True)
 
 
-def cleaner(x):
-	out = x.replace('"', '')
-	out = out.replace("[", "['")
-	out = out.replace("]", "']")
-	out = out.replace(", ", "', '")
-	out = out.replace("['']", '')
-	return out
+df.drop_duplicates(keep = 'first', inplace = True)
+#
 
-df["Links"] = df["Links"].apply(cleaner)
-
-
-
-
-
+#
 df.to_csv(outputfile,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')	
-
+#
+print("Done :) ")

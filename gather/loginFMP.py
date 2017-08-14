@@ -32,7 +32,6 @@ import time
 #################### 
 # Data Storage, Output and Input
 
-# select correct directory
 directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
@@ -43,7 +42,7 @@ chdir(directory)
 
 ## log into findmypast.com
 driver = webdriver.Firefox()
-driver.get('https://www.findmypast.com/sign-in')
+driver.get('https://www.findmypast.co.uk/sign-in')
 
 username = driver.find_element_by_id("emailAddress")
 password = driver.find_element_by_id("password")
@@ -65,7 +64,7 @@ pickle.dump( cookies , open("cookies/cookiesFMP.pkl","wb"))
 
 ## close the browser when all is done
 driver.quit()
-print 'done! :)' # to let me know its done 
+print('done! :)') # to let me know its done 
 
 
 
