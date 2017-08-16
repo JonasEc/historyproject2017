@@ -13,12 +13,9 @@
 from __future__ import division
 
 import pandas as pd
-from bs4 import BeautifulSoup
+
 
 from os import chdir
-import re
-from datetime import *
-from dateutil.relativedelta import *
 
 
 ## EXEC:

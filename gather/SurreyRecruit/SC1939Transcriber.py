@@ -30,8 +30,8 @@ from time import sleep
 
 ## these are the variables observed per person
 #varList = ["First name(s)", "Last name(s)", "DOB", "Sex" ,"Occupation", "Marital status", "Schedule", "Schedule Sub Number"]
-varList = ["FirstName", "LastName", "DOB", "Sex" ,"Occupation", "MaritalStatus", "Schedule", "ScheduleSubNumber"]
-
+varList = ["TNA", "FirstName", "LastName", "DOB", "Sex" ,"Occupation", "MaritalStatus", "Schedule", "ScheduleSubNumber"]
+varListH = ["Address1", "Address2", "Members"]
 
 ##################### 
 # Data Storage, Output and Input
@@ -41,7 +41,7 @@ directory = '/home/jonasmg/Prog/scrapinghistory/'
 chdir(directory)
 
 # our data input file
-linkset = "input/SC1939LinkSample.csv" 
+linkset = "input/SC1939LinkSampleExtraNonPals.csv" 
 
 # what is our output?
 output = []
@@ -59,33 +59,62 @@ rangeInputUpper = raw_input("What upper rowlimit?")
 rangeInputUpper = int(rangeInputUpper)
 
 
+### read in the links
+linksDF = pd.read_csv(linkset, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 2000))], header = 0)
+
+
 #####################
 #SCRAPER
 
 def scrapeP(datasoup):
 	record = []
 
-	table = datasoup.find_all("table", id="table-content table-hover footable default footable-loaded")[0]
+	table = datasoup.findAll(id="individuals")[0] #table-content table-hover footable default footable-loaded
 	rows = table.findChildren('tr')
 
-	for row in rows:
+	for row in rows[1:]:
+		uppid = row.get("data-uppid")
+		if uppid:
+			record = record + [uppid]
+		else:
+			if row.get("class") == "redacted table-row-removed footable-row-removed ":
+				print "bad record"
+				continue
+
 		cells = row.findChildren('td')
-		for cell in cells[1:end]:
+		for cell in cells[1:-1]:
 			variableValue = cell.text
 			variableValue = unicode(variableValue) 
 			variableValue = unidecode(variableValue) 
 			variableValue = variableValue.encode("ascii")
 			if variableValue:
-				if variableValue == "Sorry, this record is officially closed.":
-					continue
-				else:
-					record = record + [variableValue]
+				record = record + [variableValue]
 			else:
 				record = record + [""]
 
-	number = len(rows)
+	number = int(len(record)/9)
 
-	return record, number
+	numberH = len(rows) - 1
+	return record, number, numberH
+
+def scrapeH(datasoup):
+	recordH = []
+
+	address1 = datasoup.findAll(attrs = {"data-id": "transcriptAddress"})[0]
+	address2 = datasoup.findAll(attrs = {"data-id": "transcriptPlace"})[0]
+	
+	for a in [address1, address2]:
+		variableValue = a.text
+		variableValue = unicode(variableValue) 
+		variableValue = unidecode(variableValue) 
+		variableValue = variableValue.encode("ascii")
+		variableValue = ' '.join(variableValue.split())
+		if variableValue:
+			recordH = recordH + [variableValue]
+		else:
+			recordH = recordH + [""]
+
+	return recordH
 
 
 
@@ -122,11 +151,6 @@ driver.addheaders = [ ( 'User-agent', 'Mozilla/5.0 (X11; U; Linux i686; en-US; r
 
 
 
-
-### read in the links
-linksDF = pd.read_csv(linkset, sep=',', skiprows = [i for i in (range(1,rangeInputLower) + range(rangeInputUpper+1, 2000))], header = 0)
-
-
 ############## LOOP THRU ALL LINKS ###########
 
 for index, row in linksDF.iterrows():
@@ -134,29 +158,43 @@ for index, row in linksDF.iterrows():
 ## overhead: set up storage for this iteration etc
 	ID = row["PersonCounter"]
 	link = row["Links"]	
+	TNA = link[41:].replace('%2F', '/')
 
-	driver.open(link)
-	sleep(random())
+	while True:
+		try:
+			sleep(random())
+			driver.open(link)
+			break
+		except:
+			sleep(random()*60)
 	datasource = driver.response().read()
 	datasoup = BeautifulSoup(datasource,"lxml")	
 
 ## Scrape record for the person
-	output, number = scrapeP(datasoup)
-	record = [ID] + output
+	scrapePOut, number, numberH = scrapeP(datasoup)
+	scrapeHOut = scrapeH(datasoup)
+	record = [TNA] + [ID] + scrapeHOut + [numberH] + scrapePOut
 
 	if number > currentMax:
 		currentMax = number
+
+
 	output.append(record)  ## add the row to the overall data set
 		
-	variableNamesNow = ["ID"] + varList + [a + str(b) for b in range(1,currentMax) for a in varList ]
-	
+	variableNamesNow = ["TargetTNA"] + ["ID"] + varListH + varList + [a + str(b) for b in range(1,currentMax) for a in varList ]
 
 	if counter%25 == 0:
-		outputframe = pd.DataFrame(output, columns=variableNamesNow)
+		try:
+			outputframe = pd.DataFrame(output, columns=variableNamesNow)
+		except:
+			print output
+			print "+++++++++++++++++++++++++"
+			print variableNamesNow
+
 		outputFileName = outputfile + name + ".csv"
 		outputframe.to_csv(outputFileName,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
 
-########%%%%%%%%%% DONE! 
+########%%%%%%%%%% ONELASTSAVE! 
 outputframe = pd.DataFrame(output, columns=variableNamesNow)
 outputFileName = outputfile + name + ".csv"
 outputframe.to_csv(outputFileName,sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
