@@ -37,6 +37,8 @@ inputfile = "data/SC1939FirstSample.csv"
 
 # what is our output?
 outputfile = "data/SC1939FirstSampleFixed.csv"
+outputfile2 = "data/SC1939FirstSampleJustOccup.csv"
+
 
 # Read in the data
 df = pd.read_csv(inputfile, sep =',')
@@ -60,6 +62,35 @@ def tidyRole(row):
 
 df = df.apply(tidyRole, axis=1)
 
+#df2 = df.loc[df["TargetTNA"] != df["TNA"]]
+
 df = df.drop(["Schedule","ScheduleSubNumber"], axis = 1)
 
+df.drop_duplicates(keep="first", inplace = True, subset =["TNA", "FirstName_x", "LastName_x","FirstName_y", "LastName_y", "DOB", "BirthDate" ])
+
+
+
+def tidyOccup(x):
+    if isinstance(x, basestring):
+        x =  x.replace("-","") 
+        x =  x.replace("?","")
+#    x = x.replace("(Heavy Work)", "") 
+#    x = x.replace("Heavy Work", "")
+#    x = x.replace("Heavy", "")
+#    x = x.replace("Heav Wor", "")
+#    x= x.replace("H W", "")
+#    x= x.replace("(H W)", "")
+#    x = x.replace("HW", "")    
+#    x = x.replace("(HW)", "")
+#    x = x.replace("Hw", "")    
+#    x = x.replace("(Hw)", "")
+    return x
+
+df["Occupation_x"] = df["Occupation_x"].apply(tidyOccup) 
+
+df = df[df["Occupation_x"] != ""]
+df = df[pd.notnull(df["Occupation_x"])]
+
+df3 = df[["ID","Occupation_x","Occupation_y"]]
 df.to_csv(outputfile, sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')
+df.to_csv(outputfile2, sep=',', na_rep='', float_format=None, header=True,encoding='utf-8')

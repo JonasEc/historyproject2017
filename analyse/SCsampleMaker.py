@@ -26,7 +26,7 @@ from dateutil.relativedelta import *
 # End of Pals Recruitment:
 palsEndDate = date(1916,3,2) ## year month day 
 ageCutoff = 19
-
+palsStartDate = date(1914,7,1)
 
 # types of regiments:
 
